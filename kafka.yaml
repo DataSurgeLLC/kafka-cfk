@@ -1,0 +1,47 @@
+apiVersion: platform.confluent.io/v1beta1
+kind: Kafka
+metadata:
+  name: kafka
+  namespace: confluent
+spec:
+  replicas: 3
+  image:
+    application: confluentinc/cp-server:7.9.0
+    init: confluentinc/confluent-init-container:2.7.0
+  dataVolumeCapacity: 10Gi
+  metricReporter:
+    enabled: true
+  kraft:
+    mode: "kraft"
+    controller:
+      replicas: 3
+      dataVolumeCapacity: 10Gi
+      configOverrides:
+        server:
+          - "process.roles=controller"
+          - "controller.quorum.voters=controller-0@controller-0.controller.confluent.svc.cluster.local:9093,controller-1@controller-1.controller.confluent.svc.cluster.local:9093,controller-2@controller-2.controller.confluent.svc.cluster.local:9093"
+          - "node.id=${CONTROLLER_ID}"
+      podTemplate:
+        resources:
+          requests:
+            cpu: 200m
+            memory: 1Gi
+          limits:
+            cpu: 500m
+            memory: 2Gi
+  configOverrides:
+    server:
+      - "process.roles=broker"
+      - "node.id=${BROKER_ID}"
+      - "controller.quorum.voters=controller-0@controller-0.controller.confluent.svc.cluster.local:9093,controller-1@controller-1.controller.confluent.svc.cluster.local:9093,controller-2@controller-2.controller.confluent.svc.cluster.local:9093"
+      - "confluent.license.topic.replication.factor=3"
+      - "transaction.state.log.replication.factor=3"
+      - "transaction.state.log.min.isr=2"
+  podTemplate:
+    resources:
+      requests:
+        cpu: 500m
+        memory: 2Gi
+      limits:
+        cpu: 2000m
+        memory: 4Gi
